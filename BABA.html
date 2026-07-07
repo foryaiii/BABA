@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全能网页加密工具</title>
+    <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.2.0/crypto-js.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+
+        body {
+            background: #f5f7fa;
+            padding: 20px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .container {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #2d3748;
+            margin-bottom: 25px;
+            font-size: 24px;
+        }
+
+        .tool-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #4a5568;
+        }
+
+        select, textarea, input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 15px;
+            margin-bottom: 12px;
+        }
+
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+            min-width: 120px;
+        }
+
+        .btn-encrypt {
+            background: #4299e1;
+            color: white;
+        }
+
+        .btn-decrypt {
+            background: #38b2ac;
+            color: white;
+        }
+
+        .btn-copy {
+            background: #9f7aea;
+            color: white;
+        }
+
+        .btn-clear {
+            background: #e53e3e;
+            color: white;
+        }
+
+        .tip {
+            font-size: 13px;
+            color: #718096;
+            margin-bottom: 10px;
+        }
+
+        .result-box {
+            background: #f7fafc;
+            padding: 15px;
+            border-radius: 6px;
+            min-height: 80px;
+            word-break: break-all;
+            border: 1px solid #e2e8f0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔒 全能网页加密工具</h1>
+
+        <!-- 算法选择 -->
+        <div class="tool-group">
+            <label>选择加密算法</label>
+            <select id="algorithm">
+                <option value="aes">AES-256-CBC (最安全)</option>
+                <option value="sha256">SHA-256 (哈希)</option>
+                <option value="sha512">SHA-512 (哈希)</option>
+                <option value="md5">MD5 (哈希)</option>
+                <option value="base64">Base64 编码</option>
+                <option value="caesar">凯撒密码</option>
+                <option value="vigenere">维吉尼亚密码</option>
+                <option value="railfence">栅栏密码</option>
+                <option value="morse">摩斯密码</option>
+                <option value="binary">二进制转换</option>
+                <option value="hex">十六进制转换</option>
+            </select>
+        </div>
+
+        <!-- 密钥/偏移设置 -->
+        <div class="tool-group">
+            <label>密钥 / 偏移量 / 参数</label>
+            <input id="key" placeholder="AES/维吉尼亚：输入密钥 | 凯撒：输入偏移量(如3) | 栅栏：输入栏数">
+            <div class="tip">提示：哈希算法(MD5/SHA)无需密钥，留空即可</div>
+        </div>
+
+        <!-- 输入文本 -->
+        <div class="tool-group">
+            <label>输入原文 / 密文</label>
+            <textarea id="inputText" placeholder="请输入需要加密或解密的内容"></textarea>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div class="btn-group">
+            <button class="btn-encrypt" onclick="encrypt()">加密 / 编码</button>
+            <button class="btn-decrypt" onclick="decrypt()">解密 / 解码</button>
+            <button class="btn-copy" onclick="copyResult()">复制结果</button>
+            <button class="btn-clear" onclick="clearAll()">清空全部</button>
+        </div>
+
+        <!-- 结果输出 -->
+        <div class="tool-group">
+            <label>输出结果</label>
+            <div id="result" class="result-box">等待操作...</div>
+        </div>
+    </div>
+
+    <script>
+        // 获取DOM元素
+        const $ = id => document.getElementById(id);
+        const algSelect = $("algorithm");
+        const keyInput = $("key");
+        const inputText = $("inputText");
+        const resultBox = $("result");
+
+        // ———————————————— 加密主函数 ————————————————
+        function encrypt() {
+            const alg = algSelect.value;
+            const text = inputText.value.trim();
+            const key = keyInput.value.trim();
+
+            if (!text) {
+                resultBox.textContent = "⚠️ 请输入内容";
+                return;
+            }
+
+            let res;
+            try {
+                switch (alg) {
+                    case "aes":
+                        res = CryptoJS.AES.encrypt(text, key).toString();
+                        break;
+                    case "sha256":
+                        res = CryptoJS.SHA256(text).toString(CryptoJS.enc.Hex);
+                        break;
+                    case "sha512":
+                        res = CryptoJS.SHA512(text).toString(CryptoJS.enc.Hex);
+                        break;
+                    case "md5":
+                        res = CryptoJS.MD5(text).toString(CryptoJS.enc.Hex);
+                        break;
+                    case "base64":
+                        res = btoa(unescape(encodeURIComponent(text)));
+                        break;
+                    case "caesar":
+                        res = caesarCipher(text, parseInt(key) || 3, true);
+                        break;
+                    case "vigenere":
+                        res = vigenereCipher(text, key || "KEY", true);
+                        break;
+                    case "railfence":
+                        res = railFenceEncrypt(text, parseInt(key) || 3);
+                        break;
+                    case "morse":
+                        res = textToMorse(text);
+                        break;
+                    case "binary":
+                        res = textToBinary(text);
+                        break;
+                    case "hex":
+                        res = textToHex(text);
+                        break;
+                    default:
+                        res = "算法错误";
+                }
+                resultBox.textContent = res;
+            } catch (e) {
+                resultBox.textContent = "❌ 加密失败：" + e.message;
+            }
+        }
+
+        // ———————————————— 解密主函数 ————————————————
+        function decrypt() {
+            const alg = algSelect.value;
+            const text = inputText.value.trim();
+            const key = keyInput.value.trim();
+
+            if (!text) {
+                resultBox.textContent = "⚠️ 请输入内容";
+                return;
+            }
+
+            let res;
+            try {
+                switch (alg) {
+                    case "aes":
+                        res = CryptoJS.AES.decrypt(text, key).toString(CryptoJS.enc.Utf8);
+                        break;
+                    case "base64":
+                        res = decodeURIComponent(escape(atob(text)));
+                        break;
+                    case "caesar":
+                        res = caesarCipher(text, parseInt(key) || 3, false);
+                        break;
+                    case "vigenere":
+                        res = vigenereCipher(text, key || "KEY", false);
+                        break;
+                    case "railfence":
+                        res = railFenceDecrypt(text, parseInt(key) || 3);
+                        break;
+                    case "morse":
+                        res = morseToText(text);
+                        break;
+                    case "binary":
+                        res = binaryToText(text);
+                        break;
+                    case "hex":
+                        res = hexToText(text);
+                        break;
+                    default:
+                        res = "该算法不支持解密（哈希不可逆）";
+                }
+                resultBox.textContent = res || "解密失败（密钥/格式错误）";
+            } catch (e) {
+                resultBox.textContent = "❌ 解密失败：" + e.message;
+            }
+        }
+
+        // ———————————————— 古典算法实现 ————————————————
+        // 凯撒密码
+        function caesarCipher(str, shift, encrypt) {
+            shift = encrypt ? shift : -shift;
+            return str.split('').map(c => {
+                if (/[a-z]/.test(c)) {
+                    return String.fromCharCode((c.charCodeAt(0) - 97 + shift + 26) % 26 + 97);
+                } else if (/[A-Z]/.test(c)) {
+                    return String.fromCharCode((c.charCodeAt(0) - 65 + shift + 26) % 26 + 65);
+                }
+                return c;
+            }).join('');
+        }
+
+        // 维吉尼亚密码
+        function vigenereCipher(str, key, encrypt) {
+            let res = "";
+            key = key.toUpperCase();
+            let ki = 0;
+            for (let c of str) {
+                if (/[A-Z]/.test(c)) {
+                    const shift = key[ki % key.length].charCodeAt(0) - 65;
+                    const code = c.charCodeAt(0) - 65;
+                    const newCode = encrypt ? (code + shift) % 26 : (code - shift + 26) % 26;
+                    res += String.fromCharCode(newCode + 65);
+                    ki++;
+                } else if (/[a-z]/.test(c)) {
+                    const shift = key[ki % key.length].charCodeAt(0) - 65;
+                    const code = c.charCodeAt(0) - 97;
+                    const newCode = encrypt ? (code + shift) % 26 : (code - shift + 26) % 26;
+                    res += String.fromCharCode(newCode + 97);
+                    ki++;
+                } else {
+                    res += c;
+                }
+            }
+            return res;
+        }
+
+        // 栅栏加密
+        function railFenceEncrypt(str, rails) {
+            if (rails <= 1) return str;
+            const arr = Array(rails).fill("");
+            let dir = -1, row = 0;
+            for (let c of str) {
+                arr[row] += c;
+                if (row === 0 || row === rails - 1) dir *= -1;
+                row += dir;
+            }
+            return arr.join("");
+        }
+
+        // 栅栏解密
+        function railFenceDecrypt(str, rails) {
+            if (rails <= 1) return str;
+            const n = str.length;
+            const len = Array(rails).fill(0);
+            let dir = -1, row = 0;
+            for (let i = 0; i < n; i++) {
+                len[row]++;
+                if (row === 0 || row === rails - 1) dir *= -1;
+                row += dir;
+            }
+            let ptr = 0;
+            const rows = [];
+            for (let l of len) {
+                rows.push(str.slice(ptr, ptr + l));
+                ptr += l;
+            }
+            let res = "";
+            row = 0, dir = -1;
+            const ptrs = Array(rails).fill(0);
+            for (let i = 0; i < n; i++) {
+                res += rows[row][ptrs[row]++];
+                if (row === 0 || row === rails - 1) dir *= -1;
+                row += dir;
+            }
+            return res;
+        }
+
+        // 摩斯密码
+        const morseMap = {
+            'A':'.-','B':'-...','C':'-.-.','D':'-..','E':'.','F':'..-.','G':'--.','H':'....','I':'..','J':'.---','K':'-.-','L':'.-..','M':'--','N':'-.','O':'---','P':'.--.','Q':'--.-','R':'.-.','S':'...','T':'-','U':'..-','V':'...-','W':'.--','X':'-..-','Y':'-.--','Z':'--..','0':'-----','1':'.----','2':'..---','3':'...--','4':'....-','5':'.....','6':'-....','7':'--...','8':'---..','9':'----.'
+        };
+        const reverseMorse = Object.fromEntries(Object.entries(morseMap).map(([k,v])=>[v,k]));
+
+        function textToMorse(str) {
+            return str.toUpperCase().split('').map(c => morseMap[c] || c).join(' ');
+        }
+        function morseToText(str) {
+            return str.split(' ').map(c => reverseMorse[c] || c).join('');
+        }
+
+        // 二进制
+        function textToBinary(str) {
+            return str.split('').map(c => c.charCodeAt(0).toString(2).padStart(8,'0')).join(' ');
+        }
+        function binaryToText(str) {
+            return str.split(' ').map(b => String.fromCharCode(parseInt(b,2))).join('');
+        }
+
+        // 十六进制
+        function textToHex(str) {
+            return str.split('').map(c => c.charCodeAt(0).toString(16).padStart(2,'0')).join(' ');
+        }
+        function hexToText(str) {
+            return str.split(' ').map(h => String.fromCharCode(parseInt(h,16))).join('');
+        }
+
+        // ———————————————— 工具函数 ————————————————
+        function copyResult() {
+            const text = resultBox.textContent;
+            navigator.clipboard.writeText(text).then(()=>{
+                alert("✅ 复制成功！");
+            }).catch(()=>{
+                prompt("复制失败，请手动复制：", text);
+            });
+        }
+
+        function clearAll() {
+            inputText.value = "";
+            keyInput.value = "";
+            resultBox.textContent = "等待操作...";
+        }
+    </script>
+</body>
+</html>
